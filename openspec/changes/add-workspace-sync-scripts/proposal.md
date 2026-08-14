@@ -25,3 +25,4 @@
 ## Impact
 
 - 在 `C:\JohnLiang\` 新增兩個 PowerShell 腳本，簡化跨電腦操作。
+- **編碼規範遵循**：所有腳本檔案（`.ps1`）一律強制使用 **UTF-8 with BOM** 格式儲存，確保 Windows PowerShell 終端機繁體中文顯示完全相容無亂碼。
