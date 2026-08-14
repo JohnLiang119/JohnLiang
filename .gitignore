@@ -1,0 +1,20 @@
+# 1. 忽略子專案原始碼目錄（由專案自己的獨立 Git 管轄）
+..Project/avd/
+..Project/*/node_modules/
+**/node_modules/
+
+# 2. 忽略大檔案與編譯產物
+*.apk
+*.msi
+*.exe
+*.zip
+dist/
+build/
+.vscode/
+.gemini/
+
+# 3. 確保追蹤工作區核心環境與腳本
+!.agent/
+!openspec/
+!..Project/commit_avd.ps1
+!commit_JohnLiang.ps1
