@@ -16,11 +16,9 @@
 
 ### 1. `setup_JohnLiang.ps1`（情境一：新電腦初次設置）
 - **流程邏輯**：
-  1. 檢查 `C:\JohnLiang\..Project` 目錄是否存在，不存在則自動建立。
-  2. 檢查 `C:\JohnLiang\..Project\avd` 是否已存在：
-     - 若已存在，提示「avd 專案已存在」。
-     - 若不存在，執行 `git clone https://github.com/JohnLiang119/avd.git`。
-  3. 自動切換至 `..Project/avd` 並呼叫 `restore_avd.ps1` 完成套件安裝與資源同步。
+  1. **階段一（工作區環境檢測）**：檢查 `C:\JohnLiang` 是否存在；若不存在，自動執行 `git clone https://github.com/JohnLiang119/JohnLiang.git C:\JohnLiang`。
+  2. **階段二（專案程式碼檢測）**：檢查 `C:\JohnLiang\..Project\avd` 是否已存在；若不存在，自動執行 `git clone https://github.com/JohnLiang119/avd.git C:\JohnLiang\..Project\avd`。
+  3. **階段三（依賴自動還原）**：自動切換至 `C:\JohnLiang\..Project\avd` 並呼叫 `restore_avd.ps1` 完成套件安裝與資源同步。
 
 ### 2. `pull_all.ps1`（情境二：日常切換電腦更新）
 - **流程邏輯**：

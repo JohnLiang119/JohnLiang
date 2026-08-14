@@ -1,6 +1,6 @@
 ## 1. 建立新電腦初次設置腳本 (情境一)
 
-- [x] 1.1 建立 `C:\JohnLiang\setup_JohnLiang.ps1`（自動 clone avd 並執行 restore_avd.ps1，UTF-8 with BOM）
+- [x] 1.1 建立 `C:\JohnLiang\setup_JohnLiang.ps1`（自動檢測並 clone JohnLiang 工作區與 avd 專案並執行 restore_avd.ps1，UTF-8 with BOM）
 
 ## 2. 建立日常切換電腦更新拉取腳本 (情境二)
 

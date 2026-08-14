@@ -5,8 +5,8 @@
 ## What Changes
 
 - **情境一腳本：`setup_JohnLiang.ps1`（新電腦初始環境建置）**：
-  - 自動檢測 `C:\JohnLiang\..Project\avd` 是否存在。
-  - 若不存在，自動從 GitHub (`https://github.com/JohnLiang119/avd.git`) clone 下來。
+  - 自動檢測 `C:\JohnLiang` 是否存在；若不存在，自動自 GitHub (`https://github.com/JohnLiang119/JohnLiang.git`) clone 下來。
+  - 自動檢測 `C:\JohnLiang\..Project\avd` 是否存在；若不存在，自動自 GitHub (`https://github.com/JohnLiang119/avd.git`) clone 下來。
   - 自動呼叫 `restore_avd.ps1` 還原 `node_modules` 套件與 Android 資源。
 - **情境二腳本：`pull_all.ps1`（日常一鍵拉取同步）**：
   - 自動執行 `C:\JohnLiang` 工作區的 `git pull`（同步最新 AI 技能、工作流與規範）。
