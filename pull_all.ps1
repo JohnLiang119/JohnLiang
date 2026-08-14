@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param()
 
 $ErrorActionPreference = "Stop"
@@ -49,7 +49,7 @@ if (Test-Path $avdDir) {
         Write-Warning "avd 專案同步失敗，請檢查網路或遠端連線。"
     }
 } else {
-    Write-Host "ℹ️ 尚未找到 avd 專案目錄，建議您先執行: .\setup_workspace.ps1 進行初次建置。" -ForegroundColor Yellow
+    Write-Host "ℹ️ 尚未找到 avd 專案目錄，建議您先執行: .\setup_JohnLiang.ps1 進行初次建置。" -ForegroundColor Yellow
 }
 
 Set-Location $workspaceRoot

@@ -5,7 +5,7 @@
 ## Goals / Non-Goals
 
 **Goals:**
-- 提供 `setup_workspace.ps1`：專門處理新電腦的專案自動下載與環境還原。
+- 提供 `setup_JohnLiang.ps1`：專門處理新電腦的專案自動下載與環境還原。
 - 提供 `pull_all.ps1`：專門處理日常切換電腦時的一鍵全自動更新（工作區 + 專案）。
 - 所有腳本統一存為 **UTF-8 with BOM** 格式。
 
@@ -14,7 +14,7 @@
 
 ## Decisions
 
-### 1. `setup_workspace.ps1`（情境一：新電腦初次設置）
+### 1. `setup_JohnLiang.ps1`（情境一：新電腦初次設置）
 - **流程邏輯**：
   1. 檢查 `C:\JohnLiang\..Project` 目錄是否存在，不存在則自動建立。
   2. 檢查 `C:\JohnLiang\..Project\avd` 是否已存在：
@@ -27,7 +27,7 @@
   1. **階段一（工作區同步）**：於 `C:\JohnLiang` 執行 `git pull`，同步最新 AI 技能與規範。
   2. **階段二（專案同步）**：檢查 `..Project/avd` 是否存在：
      - 若存在：切換至該目錄執行 `git pull`。
-     - 若不存在：提示可先執行 `setup_workspace.ps1`。
+     - 若不存在：提示可先執行 `setup_JohnLiang.ps1`。
 
 ## Risks / Trade-offs
 

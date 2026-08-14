@@ -18,5 +18,5 @@ build/
 !openspec/
 !..Project/commit_avd.ps1
 !commit_JohnLiang.ps1
-!setup_workspace.ps1
+!setup_JohnLiang.ps1
 !pull_all.ps1

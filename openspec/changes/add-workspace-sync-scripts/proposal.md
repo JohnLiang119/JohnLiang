@@ -4,7 +4,7 @@
 
 ## What Changes
 
-- **情境一腳本：`setup_workspace.ps1`（新電腦初始環境建置）**：
+- **情境一腳本：`setup_JohnLiang.ps1`（新電腦初始環境建置）**：
   - 自動檢測 `C:\JohnLiang\..Project\avd` 是否存在。
   - 若不存在，自動從 GitHub (`https://github.com/JohnLiang119/avd.git`) clone 下來。
   - 自動呼叫 `restore_avd.ps1` 還原 `node_modules` 套件與 Android 資源。
@@ -12,12 +12,12 @@
   - 自動執行 `C:\JohnLiang` 工作區的 `git pull`（同步最新 AI 技能、工作流與規範）。
   - 自動執行 `C:\JohnLiang\..Project\avd` 專案的 `git pull`（同步最新應用程式碼）。
 - **更新工作區 `.gitignore`**：
-  - 確保 `!setup_workspace.ps1` 與 `!pull_all.ps1` 被工作區版本控制正常追蹤。
+  - 確保 `!setup_JohnLiang.ps1` 與 `!pull_all.ps1` 被工作區版本控制正常追蹤。
 
 ## Capabilities
 
 ### New Capabilities
-- `workspace-sync-scripts`: 提供 `setup_workspace.ps1` 與 `pull_all.ps1`，實現跨電腦一鍵專案環境安裝與日常全自動更新。
+- `workspace-sync-scripts`: 提供 `setup_JohnLiang.ps1` 與 `pull_all.ps1`，實現跨電腦一鍵專案環境安裝與日常全自動更新。
 
 ### Modified Capabilities
 <!-- 無既有規格修改 -->
