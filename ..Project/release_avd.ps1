@@ -150,16 +150,22 @@ if ($uploadFiles.Count -eq 0) {
 Write-Host ""
 Write-Host ">>> [步驟 4/4] 正在發布/更新 GitHub Release ($Tag)..." -ForegroundColor Cyan
 
-# 檢查遠端是否已存在此 Tag 的 Release
-$existingRelease = & gh release view $Tag --repo $fullRepo 2>&1
+# 檢查遠端是否已存在此 Tag 的 Release (避免 Stop 捕獲原生 stderr)
+$prevEAP = $ErrorActionPreference
+$ErrorActionPreference = "SilentlyContinue"
+$null = & gh release view $Tag --repo $fullRepo 2>$null
 $releaseExists = ($LASTEXITCODE -eq 0)
+$ErrorActionPreference = $prevEAP
 
 if ($releaseExists) {
     Write-Host "ℹ️ 偵測到遠端已存在 Release $Tag，正在上傳/覆蓋安裝包附件..." -ForegroundColor Yellow
     foreach ($file in $uploadFiles) {
         $fileName = Split-Path $file -Leaf
         Write-Host ">>> 正在上傳附件: $fileName ..." -ForegroundColor Cyan
+        $prevEAP = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
         & gh release upload $Tag "$file" --repo $fullRepo --clobber
+        $ErrorActionPreference = $prevEAP
     }
 } else {
     Write-Host "ℹ️ 正在建立全新 GitHub Release ($Tag)..." -ForegroundColor Yellow
@@ -188,9 +194,13 @@ if ($releaseExists) {
         $cmdArgs += "--prerelease"
     }
 
-    $cmdArgs += "--clobber"
+    $cmdArgs += "--latest"
 
+    $prevEAP = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
     & gh @cmdArgs
+    $createCode = $LASTEXITCODE
+    $ErrorActionPreference = $prevEAP
 }
 
 if ($LASTEXITCODE -eq 0) {
