@@ -7,4 +7,4 @@
 ## 2. 建立工作區自動化同步腳本
 
 - [x] 2.1 建立 `C:\JohnLiang\commit_JohnLiang.ps1` 支援自動提交與推送至 GitHub（UTF-8 with BOM）
-- [ ] 2.2 進行工作區初始 Commit 測試與驗證
+- [x] 2.2 進行工作區初始 Commit 測試與驗證
