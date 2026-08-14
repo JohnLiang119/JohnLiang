@@ -21,6 +21,12 @@ if (Test-Path "$workspaceRoot\.git\index.lock") {
     Remove-Item "$workspaceRoot\.git\index.lock" -Force -ErrorAction SilentlyContinue
 }
 
+# 確保預設遠端倉庫 origin 存在
+$remotes = git remote
+if ($remotes -notcontains "origin") {
+    git remote add origin https://github.com/JohnLiang119/JohnLiang.git
+}
+
 Write-Host ">>> 檢查目前工作區變更狀態 (git status)..." -ForegroundColor Cyan
 git status
 
@@ -57,23 +63,22 @@ if ($status) {
 
 # 檢查與執行 Git Push
 if (-not $NoPush) {
-    $remoteUrl = git remote get-url origin 2>$null
-    if ($remoteUrl) {
-        Write-Host ""
-        Write-Host ">>> 正在推送至 GitHub 遠端工作區倉庫 (git push origin main)..." -ForegroundColor Cyan
-        git push -u origin main
+    Write-Host ""
+    Write-Host ">>> 正在推送至 GitHub 遠端工作區倉庫 (git push origin main)..." -ForegroundColor Cyan
+    
+    # 暫時放寬 ErrorAction 讓 git push 輸出正常的進度與錯誤訊息
+    $prevEAP = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    git push -u origin main
+    $pushCode = $LASTEXITCODE
+    $ErrorActionPreference = $prevEAP
 
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host ""
-            Write-Host "🎉 成功！工作區設定與 AI 技能已同步推送到 GitHub 遠端倉庫！" -ForegroundColor Green
-        } else {
-            Write-Warning "推送至 GitHub 失敗！請確認遠端倉庫已建立且網路連線正常。"
-        }
+    if ($pushCode -eq 0) {
+        Write-Host ""
+        Write-Host "🎉 成功！工作區設定與 AI 技能已同步推送到 GitHub 遠端倉庫！" -ForegroundColor Green
     } else {
         Write-Host ""
-        Write-Host "ℹ️ 提示：目前尚未設定 GitHub 遠端倉庫 (origin)。" -ForegroundColor Yellow
-        Write-Host "若要同步至 GitHub，請先在 GitHub 建立倉庫（如 JohnLiang），然後執行：" -ForegroundColor DarkGray
-        Write-Host "  git remote add origin https://github.com/JohnLiang119/JohnLiang.git" -ForegroundColor Cyan
-        Write-Host "  git push -u origin main" -ForegroundColor Cyan
+        Write-Warning "推送至 GitHub 尚未成功！"
+        Write-Host "📌 若您尚未在 GitHub 上建立 'JohnLiang' 倉庫，請先至 GitHub 點擊 [New] 建立名稱為 'JohnLiang' 的空白倉庫（不要勾選 Add README），建立後再次執行此腳本即可。" -ForegroundColor Yellow
     }
 }
