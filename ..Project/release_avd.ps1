@@ -1,27 +1,6 @@
-﻿<#
-.SYNOPSIS
-    自動將 AVD 專案編譯產物 (APK 與 MSI) 發布至 GitHub Releases 的自動化腳本。
-
-.DESCRIPTION
-    利用 GitHub CLI (gh) 工具，自動偵測專案版號 (如 3.0.1)，
-    尋找對應的 AVD_${version}.apk 與 AVD_${version}_*.msi 安裝包，
-    並自動在 GitHub 倉庫 (JohnLiang119/avd) 上建立或更新 Release，上傳二進制附件。
-
-.PARAMETER Tag
-    發布的 Git Tag 標籤名稱，預設為 "v" + package.json 版號 (例如 "v3.0.1")。
-
-.PARAMETER Title
-    Release 標題，預設為 "v$version 官方發布"。
-
-.PARAMETER Notes
-    Release 說明內容，若未指定則自動採用預設或提示輸入。
-
-.PARAMETER Draft
-    是否建立為草稿 (Draft)。
-
-.PARAMETER Prerelease
-    是否設定為預發布版本 (Pre-release)。
-#>
+﻿# =========================================================
+#   AVD 一鍵自動發布至 GitHub Releases (APK + Windows MSI)
+# =========================================================
 [CmdletBinding()]
 param(
     [Parameter(Position=0, Mandatory=$false)]
@@ -55,37 +34,61 @@ if (Test-Path (Join-Path $scriptDir "avd")) {
 Set-Location $avdDir
 
 Write-Host "=========================================" -ForegroundColor Magenta
-Write-Host "   開始執行 AVD GitHub Release 發布作業" -ForegroundColor Magenta
+Write-Host "   開始執行 AVD 一鍵 GitHub Release 發布" -ForegroundColor Magenta
 Write-Host "=========================================" -ForegroundColor Magenta
 Write-Host ""
 
-# 1. 檢查 GitHub CLI (gh) 安裝與登入狀態
-Write-Host ">>> [步驟 1/4] 檢查 GitHub CLI (gh) 工具與登入狀態..." -ForegroundColor Cyan
+# 1. 確保 GitHub CLI (gh) 環境變數與安裝
+$ghPath = "C:\Program Files\GitHub CLI"
+if ((Test-Path $ghPath) -and ($env:PATH -notmatch [regex]::Escape($ghPath))) {
+    $env:PATH = "$ghPath;$env:PATH"
+}
+
+Write-Host "--- 步驟 1/5: 檢查 GitHub CLI (gh) 工具與登入狀態..." -ForegroundColor Cyan
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
-    Write-Error "找不到 GitHub CLI (gh) 工具，請先安裝 gh！"
+    Write-Host "尚未偵測到 GitHub CLI，正在嘗試透過 winget 自動安裝..." -ForegroundColor Yellow
+    winget install --id GitHub.cli --exact --silent --accept-source-agreements --accept-package-agreements
+    if (Test-Path $ghPath) {
+        $env:PATH = "$ghPath;$env:PATH"
+    }
+}
+
+if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+    Write-Error "找不到 GitHub CLI (gh) 工具！請先手動安裝 GitHub CLI (https://cli.github.com/)。"
     exit 1
 }
 
-$authStatus = & gh auth status 2>&1
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "GitHub CLI 尚未登入！請先於終端機執行 'gh auth login' 完成驗證後再執行此腳本。"
-    exit 1
+# 檢查登入狀態
+$prevEAP = $ErrorActionPreference
+$ErrorActionPreference = "SilentlyContinue"
+$authOutput = & gh auth status 2>&1
+$isLoggedIn = ($LASTEXITCODE -eq 0)
+$ErrorActionPreference = $prevEAP
+
+if (-not $isLoggedIn) {
+    Write-Host "偵測到 GitHub CLI 尚未登入！" -ForegroundColor Yellow
+    Write-Host "正在為您啟動網頁快速登入..." -ForegroundColor Cyan
+    & gh auth login --web -h github.com -p https
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "GitHub CLI 登入授權未完成，請完成登入後再次執行此腳本。"
+        exit 1
+    }
 }
 
-# 取得目前登入的 GitHub 帳號
+# 取得目前登入的 GitHub 帳號與倉庫
 $ghUser = (& gh api user -q ".login" 2>$null)
 if (-not $ghUser) {
     $ghUser = "JohnLiang119"
 }
 $repoName = "avd"
 $fullRepo = "$ghUser/$repoName"
-Write-Host "✅ 驗證成功！目前登入帳號: $ghUser (目標倉庫: $fullRepo)" -ForegroundColor Green
+Write-Host "GitHub CLI 驗證成功！登入帳號: $ghUser (目標倉庫: $fullRepo)" -ForegroundColor Green
 
-# 2. 自動讀取版本號與設定 Tag
+# 2. 自動讀取版本號
 Write-Host ""
-Write-Host ">>> [步驟 2/4] 讀取專案版號與發布資訊..." -ForegroundColor Cyan
+Write-Host "--- 步驟 2/5: 讀取專案版號與發布資訊..." -ForegroundColor Cyan
 
-$version = "1.0.0"
+$version = "1.0.3"
 if (Test-Path "package.json") {
     try {
         $pkg = Get-Content "package.json" -Raw | ConvertFrom-Json
@@ -101,56 +104,82 @@ if (-not $Title) {
     $Title = "v$version 官方發布"
 }
 
-Write-Host "📌 發布版本 (Version) : $version" -ForegroundColor Cyan
-Write-Host "📌 標籤名稱 (Tag)     : $Tag" -ForegroundColor Cyan
-Write-Host "📌 標題 (Title)       : $Title" -ForegroundColor Cyan
+Write-Host "  當前發布版本 (Version) : $version" -ForegroundColor Cyan
+Write-Host "  發布標籤名稱 (Tag)     : $Tag" -ForegroundColor Cyan
+Write-Host "  發布標題 (Title)       : $Title" -ForegroundColor Cyan
 
-# 3. 搜尋要上傳的安裝包檔案 (APK 與 MSI)
+# 3. 前置 Git 狀態檢查與自動同步
 Write-Host ""
-Write-Host ">>> [步驟 3/4] 尋找待發布的安裝包檔案..." -ForegroundColor Cyan
+Write-Host "--- 步驟 3/5: 檢查本機 Git 狀態並同步遠端倉庫..." -ForegroundColor Cyan
 
-# 尋找 APK
+$gitStatus = & git status --porcelain
+if ($gitStatus) {
+    Write-Host "偵測到本機有尚未提交的檔案變更，正在自動提交並推送..." -ForegroundColor Yellow
+    & git add -A
+    $nowStr = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+    $commitMsg = "chore: v$version 發布前自動同步 ($nowStr)"
+    & git commit -m "$commitMsg"
+    & git push origin main
+    Write-Host "程式碼已成功同步推送到 GitHub main 分支！" -ForegroundColor Green
+} else {
+    Write-Host "本機工作區乾淨，無未提交之變更。" -ForegroundColor Green
+    try { & git push origin main 2>&1 | Out-Null } catch {}
+}
+
+# 4. 尋找並驗證 APK 與 MSI 安裝包
+Write-Host ""
+Write-Host "--- 步驟 4/5: 搜尋待發布的安裝包檔案..." -ForegroundColor Cyan
+
+# 尋找 APK (優先尋找當前版本)
+$apkFilter1 = "AVD_" + $version + "*.apk"
 $apkCandidates = @(
-    (Get-ChildItem -Path . -Filter "AVD_${version}*.apk" -ErrorAction SilentlyContinue | Select-Object -First 1),
+    (Get-ChildItem -Path . -Filter $apkFilter1 -ErrorAction SilentlyContinue | Select-Object -First 1),
     (Get-ChildItem -Path . -Filter "AVD_*.apk" -ErrorAction SilentlyContinue | Select-Object -First 1),
     (Get-ChildItem -Path "android\app\build\outputs\apk\debug" -Filter "*.apk" -ErrorAction SilentlyContinue | Select-Object -First 1)
 )
-$apkFile = ($apkCandidates | Where-Object { $_ -ne $null } | Select-Object -First 1)
+$apkFile = ($apkCandidates | Where-Object { $null -ne $_ } | Select-Object -First 1)
 
-# 尋找 MSI
+# 尋找 MSI (優先尋找當前版本)
+$msiFilter1 = "AVD_" + $version + "*.msi"
+$msiFilter2 = "*" + $version + "*.msi"
 $msiCandidates = @(
-    (Get-ChildItem -Path . -Filter "AVD_${version}*.msi" -ErrorAction SilentlyContinue | Select-Object -First 1),
-    (Get-ChildItem -Path . -Filter "AVD_*.msi" -ErrorAction SilentlyContinue | Select-Object -First 1),
-    (Get-ChildItem -Path "src-tauri\target\release\bundle\msi" -Filter "*.msi" -ErrorAction SilentlyContinue | Select-Object -First 1)
+    (Get-ChildItem -Path . -Filter $msiFilter1 -ErrorAction SilentlyContinue | Select-Object -First 1),
+    (Get-ChildItem -Path "src-tauri\target\release\bundle\msi" -Filter $msiFilter2 -ErrorAction SilentlyContinue | Select-Object -First 1),
+    (Get-ChildItem -Path . -Filter "AVD_*.msi" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1),
+    (Get-ChildItem -Path "src-tauri\target\release\bundle\msi" -Filter "*.msi" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1)
 )
-$msiFile = ($msiCandidates | Where-Object { $_ -ne $null } | Select-Object -First 1)
+$msiFile = ($msiCandidates | Where-Object { $null -ne $_ } | Select-Object -First 1)
 
 $uploadFiles = @()
 
 if ($apkFile) {
-    Write-Host "📦 找到 APK 安裝檔: $($apkFile.Name) ($([math]::Round($apkFile.Length / 1MB, 2)) MB)" -ForegroundColor Green
+    $apkName = $apkFile.Name
+    $apkSizeMB = [math]::Round($apkFile.Length / 1MB, 2)
+    Write-Host "  找到 APK 安裝檔: $apkName - $apkSizeMB MB" -ForegroundColor Green
     $uploadFiles += $apkFile.FullName
 } else {
     Write-Warning "未找到 APK 安裝檔！"
 }
 
 if ($msiFile) {
-    Write-Host "📦 找到 MSI 安裝檔: $($msiFile.Name) ($([math]::Round($msiFile.Length / 1MB, 2)) MB)" -ForegroundColor Green
+    $msiName = $msiFile.Name
+    $msiSizeMB = [math]::Round($msiFile.Length / 1MB, 2)
+    Write-Host "  找到 MSI 安裝檔: $msiName - $msiSizeMB MB" -ForegroundColor Green
     $uploadFiles += $msiFile.FullName
 } else {
     Write-Warning "未找到 MSI 安裝檔！"
 }
 
 if ($uploadFiles.Count -eq 0) {
-    Write-Error "找不到任何可上傳的 APK 或 MSI 安裝包！請先執行 '.\all.ps1' 進行編譯打包。"
+    Write-Error "找不到任何可上傳的 APK 或 MSI 安裝包！請先手動執行 .\all.ps1 進行全平台編譯打包。"
     exit 1
 }
 
-# 4. 發布至 GitHub Releases
+# 5. 發布至 GitHub Releases
 Write-Host ""
-Write-Host ">>> [步驟 4/4] 正在發布/更新 GitHub Release ($Tag)..." -ForegroundColor Cyan
+Write-Host "--- 步驟 5/5: 正在發布/更新 GitHub Release $Tag ..." -ForegroundColor Cyan
 
-# 檢查遠端是否已存在此 Tag 的 Release (避免 Stop 捕獲原生 stderr)
+# 檢查遠端是否已存在此 Tag 的 Release
 $prevEAP = $ErrorActionPreference
 $ErrorActionPreference = "SilentlyContinue"
 $null = & gh release view $Tag --repo $fullRepo 2>$null
@@ -158,17 +187,22 @@ $releaseExists = ($LASTEXITCODE -eq 0)
 $ErrorActionPreference = $prevEAP
 
 if ($releaseExists) {
-    Write-Host "ℹ️ 偵測到遠端已存在 Release $Tag，正在上傳/覆蓋安裝包附件..." -ForegroundColor Yellow
+    Write-Host "偵測到遠端已存在 Release $Tag，正在上傳/覆蓋安裝包附件..." -ForegroundColor Yellow
     foreach ($file in $uploadFiles) {
         $fileName = Split-Path $file -Leaf
-        Write-Host ">>> 正在上傳附件: $fileName ..." -ForegroundColor Cyan
+        Write-Host "  正在上傳附件: $fileName ..." -ForegroundColor Cyan
         $prevEAP = $ErrorActionPreference
         $ErrorActionPreference = "Continue"
         & gh release upload $Tag "$file" --repo $fullRepo --clobber
         $ErrorActionPreference = $prevEAP
     }
+    Write-Host "  正在確認 Release $Tag 為正式發布 Latest..." -ForegroundColor Cyan
+    $prevEAP = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    & gh release edit $Tag --repo $fullRepo --draft=false --latest
+    $ErrorActionPreference = $prevEAP
 } else {
-    Write-Host "ℹ️ 正在建立全新 GitHub Release ($Tag)..." -ForegroundColor Yellow
+    Write-Host "正在建立全新 GitHub Release $Tag ..." -ForegroundColor Yellow
     
     $cmdArgs = @("release", "create", $Tag)
     foreach ($file in $uploadFiles) {
@@ -206,9 +240,9 @@ if ($releaseExists) {
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
     Write-Host "=========================================" -ForegroundColor Green
-    Write-Host "🎉 恭喜！AVD $Tag 安裝包已成功發布至 GitHub Release！" -ForegroundColor Green
+    Write-Host "  恭喜！AVD $Tag 一鍵發布已圓滿成功！" -ForegroundColor Green
     Write-Host "=========================================" -ForegroundColor Green
-    Write-Host "🌐 Release 網址: https://github.com/$fullRepo/releases/tag/$Tag" -ForegroundColor Cyan
+    Write-Host "  Release 網址: https://github.com/$fullRepo/releases/tag/$Tag" -ForegroundColor Cyan
     Write-Host ""
 } else {
     Write-Error "發布 GitHub Release 失敗，請檢查網路連線或權限！"
