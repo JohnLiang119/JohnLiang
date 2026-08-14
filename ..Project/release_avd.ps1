@@ -85,7 +85,7 @@ Write-Host "✅ 驗證成功！目前登入帳號: $ghUser (目標倉庫: $fullR
 Write-Host ""
 Write-Host ">>> [步驟 2/4] 讀取專案版號與發布資訊..." -ForegroundColor Cyan
 
-$version = "3.0.1"
+$version = "1.0.0"
 if (Test-Path "package.json") {
     try {
         $pkg = Get-Content "package.json" -Raw | ConvertFrom-Json
