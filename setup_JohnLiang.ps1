@@ -10,63 +10,64 @@ $workspaceRepoUrl = "https://github.com/JohnLiang119/JohnLiang.git"
 $avdRepoUrl = "https://github.com/JohnLiang119/avd.git"
 
 Write-Host "=========================================" -ForegroundColor Magenta
-Write-Host "   ???瑁? JohnLiang ?刻?極雿??啣?撱箇蔭" -ForegroundColor Magenta
+Write-Host "   開始執行 JohnLiang 全自動工作區環境建置" -ForegroundColor Magenta
 Write-Host "=========================================" -ForegroundColor Magenta
 Write-Host ""
 
-# 1. 瑼Ｘ銝虫?頛?JohnLiang 撌乩???啣? (AI ??賬?蝭??單)
+# 1. 檢查並下載 JohnLiang 工作區環境 (AI 技能、規範與腳本)
 if (-not (Test-Path $targetRoot)) {
-    Write-Host ">>> [?挾銝] 甇?銝? JohnLiang 撌乩???啣? (git clone)..." -ForegroundColor Cyan
+    Write-Host ">>> [階段一] 正在下載 JohnLiang 工作區環境 (git clone)..." -ForegroundColor Cyan
     git clone $workspaceRepoUrl $targetRoot
 
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "git clone JohnLiang 憭望?嚗?瑼Ｘ蝬脰楝?????GitHub 摮?甈???
+        Write-Error "git clone JohnLiang 失敗！請檢查網路連線或 GitHub 存取權限。"
         exit 1
     }
-    Write-Host "??JohnLiang 撌乩???啣?銝?摰?嚗? -ForegroundColor Green
+    Write-Host "✅ JohnLiang 工作區環境下載完成！" -ForegroundColor Green
 } else {
-    Write-Host "?對? [?挾銝] JohnLiang 撌乩??撌脣??冽 $targetRoot?? -ForegroundColor Yellow
+    Write-Host "ℹ️ [階段一] JohnLiang 工作區已存在於 $targetRoot。" -ForegroundColor Yellow
 }
 
-# 2. 蝣箔? ..Project ?桅?摮
+# 2. 確保 ..Project 目錄存在
 if (-not (Test-Path $projectDir)) {
-    Write-Host ">>> 撱箇?撠?銝惜?桅?: $projectDir" -ForegroundColor Cyan
+    Write-Host ">>> 建立專案上層目錄: $projectDir" -ForegroundColor Cyan
     New-Item -ItemType Directory -Path $projectDir -Force | Out-Null
 }
 
-# 3. 瑼Ｘ銝虫?頛?avd 撠?蝔?蝣?if (-not (Test-Path $avdDir)) {
+# 3. 檢查並下載 avd 專案程式碼
+if (-not (Test-Path $avdDir)) {
     Write-Host ""
-    Write-Host ">>> [?挾鈭 甇?敺?GitHub 銝? avd 撠?蝔?蝣?(git clone)..." -ForegroundColor Cyan
+    Write-Host ">>> [階段二] 正在從 GitHub 下載 avd 專案程式碼 (git clone)..." -ForegroundColor Cyan
     Set-Location $projectDir
     git clone $avdRepoUrl avd
 
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "git clone avd 憭望?嚗?瑼Ｘ蝬脰楝?????GitHub 摮?甈???
+        Write-Error "git clone avd 失敗！請檢查網路連線或 GitHub 存取權限。"
         exit 1
     }
-    Write-Host "??avd 撠?銝?摰?嚗? -ForegroundColor Green
+    Write-Host "✅ avd 專案下載完成！" -ForegroundColor Green
 } else {
-    Write-Host "?對? [?挾鈭 avd 撠?撌脣??冽 $avdDir?? -ForegroundColor Yellow
+    Write-Host "ℹ️ [階段二] avd 專案已存在於 $avdDir。" -ForegroundColor Yellow
 }
 
-# 4. ?瑁?撠?靘陷??
+# 4. 執行專案依賴還原
 $restoreScript = Join-Path $avdDir "restore_avd.ps1"
 if (Test-Path $restoreScript) {
     Write-Host ""
-    Write-Host ">>> [?挾銝 甇??瑁? avd ??啣??? (npm install & cap sync)..." -ForegroundColor Cyan
+    Write-Host ">>> [階段三] 正在執行 avd 開發環境還原 (npm install & cap sync)..." -ForegroundColor Cyan
     Set-Location $avdDir
     powershell -ExecutionPolicy Bypass -File $restoreScript
 } else {
-    Write-Warning "?曆???restore_avd.ps1 ?單??
+    Write-Warning "找不到 restore_avd.ps1 腳本。"
 }
 
 Set-Location $targetRoot
 Write-Host ""
 Write-Host "=========================================" -ForegroundColor Magenta
-Write-Host "   ?? JohnLiang 頝券?阡??潛憓歇?券撠梁?嚗? -ForegroundColor Magenta
+Write-Host "   🎉 JohnLiang 跨電腦開發環境已全部就緒！" -ForegroundColor Magenta
 Write-Host "=========================================" -ForegroundColor Magenta
-Write-Host "?? 撌乩??頝臬?: $targetRoot" -ForegroundColor Green
-Write-Host "?? 撠?頝臬?:   $avdDir" -ForegroundColor Green
-Write-Host "?? 撟單?憒??郊?湔嚗??瑁?: .\pull_all.ps1" -ForegroundColor Cyan
-Write-Host "?? 憒???蝺刻陌嚗??瑁?: ..Project\avd\all.ps1" -ForegroundColor Cyan
+Write-Host "📌 工作區路徑: $targetRoot" -ForegroundColor Green
+Write-Host "📌 專案路徑:   $avdDir" -ForegroundColor Green
+Write-Host "📌 平時如需同步更新，請執行: .\pull_all.ps1" -ForegroundColor Cyan
+Write-Host "📌 如需打包編譯，請執行: ..Project\avd\all.ps1" -ForegroundColor Cyan
 Write-Host ""
