@@ -13,12 +13,16 @@ build/
 .vscode/
 .gemini/
 
-# 3. 確保追蹤工作區核心環境與腳本
+# 3. 自動追蹤所有維護腳本、文件與核心設定（免手動逐一新增）
 !.agent/
 !openspec/
-!..Project/commit_avd.ps1
-!commit_JohnLiang.ps1
-!setup_JohnLiang.ps1
-!pull_all.ps1
-!init_github_repo.ps1
-!CLAUDE.md
+!*.ps1
+!*.bat
+!*.cmd
+!*.sh
+!*.md
+!..Project/*.ps1
+!..Project/*.bat
+!..Project/*.cmd
+!..Project/*.sh
+!..Project/*.md

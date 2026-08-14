@@ -17,7 +17,7 @@ Write-Host "來源路徑：$sourceDir"
 Write-Host "正在排除 node_modules, dist, target, build 等非必要之檔案..."
 
 # 壓縮並排除大檔案與自動產生的檔案
-7z a -tzip "$zipPath" "$sourceDir\*" '-xr!node_modules' '-xr!dist' '-xr!src-tauri\target' '-xr!android\app\build' '-xr!android\.gradle' '-xr!android\.idea' '-xr!android\app\src\main\assets\public' '-xr!.cap' '-xr!avd_apk.apk' '-xr!avd_win.msi' '-xr!backup_avd.ps1' | Out-Null
+7z a -tzip "$zipPath" "$sourceDir\*" '-xr!node_modules' '-xr!dist' '-xr!src-tauri\target' '-xr!android\app\build' '-xr!android\.gradle' '-xr!android\.idea' '-xr!android\app\src\main\assets\public' '-xr!.cap' '-xr!*.apk' '-xr!*.msi' '-xr!backup_avd.ps1' | Out-Null
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "壓縮失敗！"
