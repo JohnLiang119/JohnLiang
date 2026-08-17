@@ -52,8 +52,7 @@ if ($status) {
 
     if ($LASTEXITCODE -eq 0) {
         Write-Host ""
-        Write-Host "✅ Commit 成功！最新紀錄：" -ForegroundColor Green
-        git log -n 1 --oneline
+        Write-Host "✅ Commit 成功！" -ForegroundColor Green
     } else {
         Write-Error "Git Commit 失敗！"
         exit 1

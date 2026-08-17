@@ -1,0 +1,1 @@
+升級為實體檔案 (tauri-plugin-store / JSON)：讓 Rust 後端將這些資料寫成獨立的 config.json 檔案。即使快取被清空，只要檔案還在，資料就不會遺失。

@@ -16,7 +16,7 @@ param(
     [switch]$Draft,
 
     [Parameter(Mandatory=$false)]
-    [switch]$Prerelease
+    [switch]$P
 )
 
 $ErrorActionPreference = "Stop"
@@ -130,14 +130,16 @@ if ($gitStatus) {
 Write-Host ""
 Write-Host "--- 步驟 4/5: 搜尋待發布的安裝包檔案..." -ForegroundColor Cyan
 
-# 尋找 APK (優先尋找當前版本)
+# 尋找 APK (支援多個架構分拆的 APK)
 $apkFilter1 = "AVD_" + $version + "*.apk"
-$apkCandidates = @(
-    (Get-ChildItem -Path . -Filter $apkFilter1 -ErrorAction SilentlyContinue | Select-Object -First 1),
-    (Get-ChildItem -Path . -Filter "AVD_*.apk" -ErrorAction SilentlyContinue | Select-Object -First 1),
-    (Get-ChildItem -Path "android\app\build\outputs\apk\debug" -Filter "*.apk" -ErrorAction SilentlyContinue | Select-Object -First 1)
-)
-$apkFile = ($apkCandidates | Where-Object { $null -ne $_ } | Select-Object -First 1)
+$apkFiles = @()
+$foundApks = Get-ChildItem -Path . -Filter $apkFilter1 -ErrorAction SilentlyContinue
+if ($foundApks) {
+    $apkFiles += $foundApks
+} else {
+    $fallbackApks = Get-ChildItem -Path . -Filter "AVD_*.apk" -ErrorAction SilentlyContinue
+    if ($fallbackApks) { $apkFiles += $fallbackApks }
+}
 
 # 尋找 MSI (優先尋找當前版本)
 $msiFilter1 = "AVD_" + $version + "*.msi"
@@ -152,11 +154,13 @@ $msiFile = ($msiCandidates | Where-Object { $null -ne $_ } | Select-Object -Firs
 
 $uploadFiles = @()
 
-if ($apkFile) {
-    $apkName = $apkFile.Name
-    $apkSizeMB = [math]::Round($apkFile.Length / 1MB, 2)
-    Write-Host "  找到 APK 安裝檔: $apkName - $apkSizeMB MB" -ForegroundColor Green
-    $uploadFiles += $apkFile.FullName
+if ($apkFiles.Count -gt 0) {
+    foreach ($apk in $apkFiles) {
+        $apkName = $apk.Name
+        $apkSizeMB = [math]::Round($apk.Length / 1MB, 2)
+        Write-Host "  找到 APK 安裝檔: $apkName - $apkSizeMB MB" -ForegroundColor Green
+        $uploadFiles += $apk.FullName
+    }
 } else {
     Write-Warning "未找到 APK 安裝檔！"
 }
@@ -196,11 +200,13 @@ if ($releaseExists) {
         & gh release upload $Tag "$file" --repo $fullRepo --clobber
         $ErrorActionPreference = $prevEAP
     }
-    Write-Host "  正在確認 Release $Tag 為正式發布 Latest..." -ForegroundColor Cyan
-    $prevEAP = $ErrorActionPreference
-    $ErrorActionPreference = "Continue"
-    & gh release edit $Tag --repo $fullRepo --draft=false --latest
-    $ErrorActionPreference = $prevEAP
+    if (-not $P) {
+        Write-Host "  正在確認 Release $Tag 為正式發布 Latest..." -ForegroundColor Cyan
+        $prevEAP = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        & gh release edit $Tag --repo $fullRepo --draft=false --prerelease=false --latest
+        $ErrorActionPreference = $prevEAP
+    }
 } else {
     Write-Host "正在建立全新 GitHub Release $Tag ..." -ForegroundColor Yellow
     
@@ -217,18 +223,33 @@ if ($releaseExists) {
         $cmdArgs += "--notes"
         $cmdArgs += $Notes
     } else {
-        $cmdArgs += "--generate-notes"
+        $prevConsoleEncoding = [Console]::OutputEncoding
+        [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+        
+        $lastCommit = (& git log -1 --pretty=%s).Trim()
+        if ($lastCommit -match "^chore: v\d+\.\d+\.\d+ 發布前自動同步") {
+            $lastCommit = (& git log -2 --pretty=%s)[1].Trim()
+        }
+        
+        [Console]::OutputEncoding = $prevConsoleEncoding
+        
+        $defaultNotes = $lastCommit
+        if (-not $defaultNotes) {
+            $defaultNotes = "AVD v$version 版本更新"
+        }
+        $cmdArgs += "--notes"
+        $cmdArgs += $defaultNotes
     }
 
     if ($Draft) {
         $cmdArgs += "--draft"
     }
 
-    if ($Prerelease) {
+    if ($P) {
         $cmdArgs += "--prerelease"
+    } else {
+        $cmdArgs += "--latest"
     }
-
-    $cmdArgs += "--latest"
 
     $prevEAP = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
