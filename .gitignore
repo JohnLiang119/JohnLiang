@@ -1,5 +1,6 @@
 # 1. 忽略子專案原始碼目錄（由專案自己的獨立 Git 管轄）
 ..Project/avd/
+..Project/pic/
 ..Project/*/node_modules/
 **/node_modules/
 
