@@ -1,10 +1,10 @@
-﻿$ErrorActionPreference = "Stop"
-Set-Location -Path $PSScriptRoot
+$ErrorActionPreference = "Stop"
+Set-Location -Path (Split-Path $PSScriptRoot -Parent)
 
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $zipName = "avd_backup_$timestamp.zip"
 $zipPath = Join-Path $env:TEMP $zipName
-$sourceDir = $PSScriptRoot
+$sourceDir = Split-Path $PSScriptRoot -Parent
 $gdriveRemote = "yiichungGDGD:AVD_Backups"
 
 Write-Host "=========================================" -ForegroundColor Magenta

@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [Parameter(Position=0, Mandatory=$false)]
     [string]$Message,
@@ -8,12 +8,12 @@ param(
 
 $ErrorActionPreference = "Stop"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$targetProject = Join-Path $scriptDir "avd"
+$targetProject = Join-Path (Split-Path $scriptDir -Parent) "PIC"
 
 Set-Location $targetProject
 
 Write-Host "=========================================" -ForegroundColor Magenta
-Write-Host "   開始執行 avd Git 提交與推送作業" -ForegroundColor Magenta
+Write-Host "   開始執行 PIC Git 提交與推送作業" -ForegroundColor Magenta
 Write-Host "=========================================" -ForegroundColor Magenta
 Write-Host ""
 
@@ -22,10 +22,10 @@ if (Test-Path "$targetProject\.git\index.lock") {
     Remove-Item "$targetProject\.git\index.lock" -Force -ErrorAction SilentlyContinue
 }
 
-# 確保遠端 URL 指向 avd.git
+# 確保遠端 URL 指向 PIC.git
 $remoteUrl = git remote get-url origin 2>$null
-if ($remoteUrl -match "avd_vue") {
-    git remote set-url origin https://github.com/JohnLiang119/avd.git
+if ($remoteUrl -notmatch "PIC\.git") {
+    git remote set-url origin https://github.com/JohnLiang119/PIC.git
 }
 
 Write-Host ">>> 檢查目前變更狀態 (git status)..." -ForegroundColor Cyan
@@ -71,6 +71,6 @@ if (-not $NoPush) {
         Write-Host ""
         Write-Host "🎉 成功！所有最新變更已同步推送到 GitHub 遠端倉庫！" -ForegroundColor Green
     } else {
-        Write-Warning "推送至 GitHub 失敗！請確認您已在 GitHub 建立 'avd' 倉庫且網路連線正常。"
+        Write-Warning "推送至 GitHub 失敗！請確認您已在 GitHub 建立 'PIC' 倉庫且網路連線正常。"
     }
 }

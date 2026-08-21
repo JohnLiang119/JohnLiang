@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [Parameter(Position=0, Mandatory=$false)]
     [string]$Message,
@@ -22,7 +22,7 @@ if (-not $Message) {
 
 # 1. 執行打包
 Write-Host ">>> [1/3] 正在執行打包 (all.ps1)..." -ForegroundColor Cyan
-$avdDir = Join-Path $scriptDir "avd"
+$avdDir = Join-Path (Split-Path $scriptDir -Parent) "avd"
 Set-Location $avdDir
 & .\all.ps1
 if ($LASTEXITCODE -ne 0) {
@@ -43,7 +43,7 @@ if ($LASTEXITCODE -ne 0) {
 # 3. 執行發布
 Write-Host ""
 Write-Host ">>> [3/3] 正在執行 GitHub Release (release_avd.ps1)..." -ForegroundColor Cyan
-Set-Location $scriptDir
+Set-Location (Split-Path $scriptDir -Parent)
 if ($P) {
     & .\release_avd.ps1 -Notes $Message -P
 } else {
